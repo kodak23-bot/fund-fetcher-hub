@@ -29,25 +29,28 @@ const UserManagement = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          balances (*)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching users:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load users: " + error.message,
-        });
-        return;
-      }
+      if (error) throw error;
 
-      if (data) {
-        setUsers(data);
-      }
+      // Fetch balances separately for each user
+      const usersWithBalances = await Promise.all(
+        (data || []).map(async (user) => {
+          const { data: balanceData } = await supabase
+            .from("balances")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          return {
+            ...user,
+            balances: balanceData ? [balanceData] : []
+          };
+        })
+      );
+
+      setUsers(usersWithBalances);
     } catch (error: any) {
       console.error("Unexpected error:", error);
       toast({
