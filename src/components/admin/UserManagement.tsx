@@ -26,16 +26,35 @@ const UserManagement = () => {
   }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select(`
-        *,
-        balances (*)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          balances (*)
+        `)
+        .order("created_at", { ascending: false });
 
-    if (data) {
-      setUsers(data);
+      if (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load users: " + error.message,
+        });
+        return;
+      }
+
+      if (data) {
+        setUsers(data);
+      }
+    } catch (error: any) {
+      console.error("Unexpected error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      });
     }
   };
 
